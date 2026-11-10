@@ -65,7 +65,7 @@ button:disabled { opacity: .66; cursor: wait; }
 .sign-in-content h1 { margin: 9px 0 4px; font-size: clamp(38px, 4vw, 52px); font-weight: 700; letter-spacing: -.06em; line-height: 1.12; }
 .sign-in-form { display: grid; margin-top: 30px; }
 .sign-in-form label { margin-bottom: 8px; font-size: 14px; font-weight: 650; }
-.sign-in-form input { width: 100%; min-height: 48px; padding: 11px 13px; color: var(--ink); border: 1px solid #c5d1df; border-radius: 8px; background: var(--surface); font-size: 16px; }
+.sign-in-form input { box-sizing: border-box; width: 100%; min-height: 48px; padding: 11px 13px; color: var(--ink); border: 1px solid #c5d1df; border-radius: 8px; background: var(--surface); font-size: 16px; }
 .sign-in-form input::placeholder { color: #617388; }
 .sign-in-form input + label { margin-top: 18px; }
 .primary-button, .secondary-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; border-radius: 8px; font-size: 14px; font-weight: 680; }
