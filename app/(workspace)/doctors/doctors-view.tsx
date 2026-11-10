@@ -38,6 +38,27 @@ export function DoctorsView() {
   const [knownSpecializations, setKnownSpecializations] = useState<string[]>([]);
   const [knownHospitals, setKnownHospitals] = useState<string[]>([]);
 
+  // Load distinct filter options on mount
+  useEffect(() => {
+    async function loadMeta() {
+      try {
+        const res = await fetch("/api/doctors/meta");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data?.specializations) {
+            setKnownSpecializations(json.data.specializations);
+          }
+          if (json.data?.hospitals) {
+            setKnownHospitals(json.data.hospitals);
+          }
+        }
+      } catch {
+        // Fallback to dynamic collection
+      }
+    }
+    loadMeta();
+  }, []);
+
   const fetchDoctors = useCallback(
     async (targetPage = 1, targetLimit = pagination.limit) => {
       setLoading(true);
