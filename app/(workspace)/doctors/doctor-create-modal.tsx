@@ -112,7 +112,7 @@ export function DoctorCreateModal({ isOpen, onClose, onSuccess }: Props) {
                   id="doc-name"
                   name="name"
                   type="text"
-                  placeholder="e.g. Dr. Sarah Jenkins"
+                  placeholder="e.g. Dr. Aminul Islam"
                   maxLength={120}
                   required
                 />
@@ -155,7 +155,7 @@ export function DoctorCreateModal({ isOpen, onClose, onSuccess }: Props) {
                   id="doc-phone"
                   name="phone"
                   type="tel"
-                  placeholder="e.g. +1 555-0199"
+                  placeholder="e.g. +8801xxxxxxxxx"
                   maxLength={32}
                   required
                 />

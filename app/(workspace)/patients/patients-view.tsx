@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, useCallback } from "react";
+import { useEffect, useState, useTransition, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Icon } from "../../components/ui-icon";
 import { PatientEditModal, type PatientRecord } from "./patient-edit-modal";
@@ -72,6 +72,7 @@ export function PatientsView() {
   const [editingPatient, setEditingPatient] = useState<PatientRecord | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const activeRequest = useRef<AbortController | null>(null);
 
   const loadMeta = useCallback(async () => {
     try {
@@ -101,6 +102,9 @@ export function PatientsView() {
 
   const fetchPatients = useCallback(
     async (targetPage = 1, targetLimit = pagination.limit) => {
+      activeRequest.current?.abort();
+      const controller = new AbortController();
+      activeRequest.current = controller;
       setLoading(true);
       setError("");
 
@@ -114,7 +118,7 @@ export function PatientsView() {
       if (toDate) params.set("to", toDate);
 
       try {
-        const res = await fetch(`/api/patients?${params.toString()}`);
+        const res = await fetch(`/api/patients?${params.toString()}`, { signal: controller.signal });
         if (!res.ok) {
           const errData = await res.json().catch(() => null);
           throw new Error(errData?.message ?? "Failed to load patients.");
@@ -123,9 +127,14 @@ export function PatientsView() {
         setPatients(json.data ?? []);
         if (json.pagination) setPagination(json.pagination);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Unable to load patients.");
+        if (!(err instanceof DOMException && err.name === "AbortError")) {
+          setError(err instanceof Error ? err.message : "Unable to load patients.");
+        }
       } finally {
-        setLoading(false);
+        if (activeRequest.current === controller) {
+          activeRequest.current = null;
+          setLoading(false);
+        }
       }
     },
     [search, condition, doctorId, fromDate, toDate, pagination.limit],
@@ -137,7 +146,10 @@ export function PatientsView() {
         fetchPatients(1);
       });
     }, 280);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      activeRequest.current?.abort();
+    };
   }, [search, condition, doctorId, fromDate, toDate, fetchPatients]);
 
   function handleResetFilters() {
@@ -549,9 +561,7 @@ export function PatientsView() {
                   id="patients-page-limit"
                   value={pagination.limit}
                   onChange={(e) => {
-                    const nextLimit = Number(e.target.value);
-                    setPagination((p) => ({ ...p, limit: nextLimit }));
-                    fetchPatients(1, nextLimit);
+                    setPagination((p) => ({ ...p, limit: Number(e.target.value) }));
                   }}
                   style={{ minHeight: 32, padding: "3px 8px", fontSize: 12 }}
                 >

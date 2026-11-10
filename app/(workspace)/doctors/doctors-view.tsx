@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, useCallback } from "react";
+import { useEffect, useState, useTransition, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Icon } from "../../components/ui-icon";
 import { DoctorCreateModal, type DoctorRecord } from "./doctor-create-modal";
@@ -37,6 +37,7 @@ export function DoctorsView() {
   // Known options collected from doctors for handy dropdown filtering
   const [knownSpecializations, setKnownSpecializations] = useState<string[]>([]);
   const [knownHospitals, setKnownHospitals] = useState<string[]>([]);
+  const activeRequest = useRef<AbortController | null>(null);
 
   // Load distinct filter options on mount
   useEffect(() => {
@@ -61,6 +62,9 @@ export function DoctorsView() {
 
   const fetchDoctors = useCallback(
     async (targetPage = 1, targetLimit = pagination.limit) => {
+      activeRequest.current?.abort();
+      const controller = new AbortController();
+      activeRequest.current = controller;
       setLoading(true);
       setError("");
 
@@ -75,7 +79,7 @@ export function DoctorsView() {
       if (toDate) params.set("to", toDate);
 
       try {
-        const response = await fetch(`/api/doctors?${params.toString()}`);
+        const response = await fetch(`/api/doctors?${params.toString()}`, { signal: controller.signal });
         if (!response.ok) {
           const errData = await response.json().catch(() => null);
           throw new Error(errData?.message || "Failed to load doctor directory.");
@@ -106,9 +110,14 @@ export function DoctorsView() {
           });
         }
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Unable to load doctors.");
+        if (!(err instanceof DOMException && err.name === "AbortError")) {
+          setError(err instanceof Error ? err.message : "Unable to load doctors.");
+        }
       } finally {
-        setLoading(false);
+        if (activeRequest.current === controller) {
+          activeRequest.current = null;
+          setLoading(false);
+        }
       }
     },
     [search, specialization, hospital, fromDate, toDate, pagination.limit],
@@ -122,7 +131,10 @@ export function DoctorsView() {
       });
     }, 280);
 
-    return () => clearTimeout(debounceTimer);
+    return () => {
+      clearTimeout(debounceTimer);
+      activeRequest.current?.abort();
+    };
   }, [search, specialization, hospital, fromDate, toDate, fetchDoctors]);
 
   function handleResetFilters() {
@@ -438,9 +450,7 @@ export function DoctorsView() {
                   id="page-limit"
                   value={pagination.limit}
                   onChange={(e) => {
-                    const nextLimit = Number(e.target.value);
-                    setPagination((p) => ({ ...p, limit: nextLimit }));
-                    fetchDoctors(1, nextLimit);
+                    setPagination((p) => ({ ...p, limit: Number(e.target.value) }));
                   }}
                   style={{ minHeight: 32, padding: "3px 8px", fontSize: 12 }}
                 >
