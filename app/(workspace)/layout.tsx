@@ -31,7 +31,7 @@ async function ProtectedWorkspace({ children }: { children: ReactNode }) {
 
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={<main className="standalone-state"><p role="status">Checking your session…</p></main>}>
+    <Suspense fallback={<main className="standalone-state"><p role="status">Loading……</p></main>}>
       <ProtectedWorkspace>{children}</ProtectedWorkspace>
     </Suspense>
   );
